@@ -33,6 +33,16 @@
           "type": "json",
           "path": "client/package-lock.json",
           "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "yaml",
+          "path": "deploy/helm/openradlr/Chart.yaml",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "yaml",
+          "path": "deploy/helm/openradlr/Chart.yaml",
+          "jsonpath": "$.appVersion"
         }
       ]
     }

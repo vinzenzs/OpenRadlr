@@ -1,0 +1,172 @@
+# OpenRadlr Helm chart. See README.md next to this file and docs/deploy.md.
+#
+# The server keeps every world in memory and stores Strava logins in SQLite,
+# so it runs as exactly one pod. There is no replica setting on purpose.
+
+image:
+  # Published by .github/workflows/image.yml. For your own build:
+  # `docker build -t <registry>/openradlr-server:<tag> .` at the repo root.
+  repository: ghcr.io/lethonium/openradlr-server
+  # Defaults to the chart's appVersion.
+  tag: ""
+  # Pin an exact build instead of a tag (sha256:...). Wins over tag.
+  digest: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Server settings as environment variables, the same names as in .env.example
+# (OPENRADLR_*, RUST_LOG). Values are quoted for you. Anything the server
+# understands can go here; the chart does not need to know about it.
+config:
+  OPENRADLR_SERVER_NAME: OpenRadlr
+  # Default route: a file in /app/routes without .json.
+  OPENRADLR_ROUTE_FILE: /app/routes/rolling-hills.json
+  # Behind an ingress the client IP comes from X-Forwarded-For. Only keep this
+  # when the ingress is the only way in.
+  OPENRADLR_TRUST_PROXY: "true"
+  OPENRADLR_ALLOW_SIMULATED_TRAINER: "false"
+  RUST_LOG: info
+
+# The address riders open, e.g. https://ride.example.org. Needed for Strava,
+# and it becomes the only page origin allowed to open game connections
+# (OPENRADLR_ALLOWED_ORIGINS) unless config sets that explicitly. Always set
+# it on a public server.
+publicUrl: ""
+
+# Strava login and the key that encrypts saved logins. Leave the values empty
+# to run without Strava. In production, prefer existingSecret over values.
+secrets:
+  # Name of a Secret you manage yourself. When set, the chart creates none and
+  # reads the keys below from it (missing keys are ignored).
+  existingSecret: ""
+  keys:
+    stravaClientId: OPENRADLR_STRAVA_CLIENT_ID
+    stravaClientSecret: OPENRADLR_STRAVA_CLIENT_SECRET  # pragma: allowlist secret
+    secretKey: OPENRADLR_SECRET_KEY  # pragma: allowlist secret
+  # Used only without existingSecret.
+  stravaClientId: ""
+  stravaClientSecret: ""
+  # 16+ random characters, e.g. `openssl rand -hex 32`. Keep it stable.
+  secretKey: ""
+
+# Extra environment entries in Kubernetes syntax (valueFrom etc.).
+extraEnv: []
+extraEnvFrom: []
+
+# Strava logins and ride statistics (/app/data). Back it up.
+persistence:
+  enabled: true
+  # Use a claim you created yourself.
+  existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+
+# Routes beyond the ones baked into the image. Each key becomes a file in
+# /app/routes, e.g. `my-route.json: |` followed by the route JSON. A ConfigMap
+# holds about 1 MiB in total; for bigger sets mount a volume via extraVolumes.
+extraRoutes: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  # WebSocket games stay open for hours; raise proxy timeouts for your
+  # controller, e.g. for ingress-nginx:
+  #   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  #   nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  annotations: {}
+  hosts:
+    - host: ride.example.org
+      paths:
+        - path: /
+          pathType: Prefix
+  # Browsers only allow Bluetooth on https:// pages.
+  tls: []
+  #  - secretName: openradlr-tls
+  #    hosts:
+  #      - ride.example.org
+
+# Prometheus metrics at /internal/metrics on the service port. With the
+# default ingress path "/" it is public too (as with the bundled Caddy); block
+# /internal at your ingress controller if that matters to you.
+metrics:
+  serviceMonitor:
+    # Requires the Prometheus Operator CRDs.
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: false
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources: {}
+#  requests:
+#    cpu: 250m
+#    memory: 128Mi
+#  limits:
+#    memory: 512Mi
+
+# Riders are dropped when the pod stops; give in-flight messages a moment.
+terminationGracePeriodSeconds: 30
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 5
+  timeoutSeconds: 3
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 2
+  failureThreshold: 30
+
+extraVolumes: []
+extraVolumeMounts: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

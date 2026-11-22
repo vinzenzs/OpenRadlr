@@ -110,6 +110,15 @@ update: setup guard ## Pull, rebuild and restart (asks first if riders are on; F
 build: ## Build the Docker image without starting it
 	$(COMPOSE) build --pull
 
+HELM ?= helm
+HELM_CHART := deploy/helm/openradlr
+
+.PHONY: helm-lint
+helm-lint: ## Lint and render the Kubernetes Helm chart (needs helm)
+	$(HELM) lint --strict $(HELM_CHART)
+	$(HELM) template ci $(HELM_CHART) >/dev/null
+	$(HELM) template ci $(HELM_CHART) -f $(HELM_CHART)/ci/full-values.yaml >/dev/null
+
 ##@ Develop
 
 .PHONY: dev

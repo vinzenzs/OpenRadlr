@@ -1,0 +1,14 @@
+apiVersion: v2
+name: openradlr
+description: OpenRadlr, an open-source indoor cycling world (game server and browser client)
+type: application
+# Both follow version.txt; Release Please bumps them with every release.
+version: 0.2.0
+appVersion: "0.2.0"
+home: https://github.com/Lethonium/OpenRadlr
+sources:
+  - https://github.com/Lethonium/OpenRadlr
+keywords:
+  - cycling
+  - game
+  - websocket

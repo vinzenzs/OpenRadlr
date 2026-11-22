@@ -71,6 +71,16 @@ jobs:
       - run: npx cap sync android
       - run: ./android/gradlew -p android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+      - run: make helm-lint
+
   image:
     name: Docker image
     runs-on: ubuntu-latest

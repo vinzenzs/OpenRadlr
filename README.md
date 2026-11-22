@@ -224,9 +224,10 @@ All settings live in `.env`; see [`.env.example`](.env.example) for descriptions
 ├── routes/                 route files (JSON), shared by server and clients
 ├── landing/                landing page for the main domain (Astro, static)
 ├── deploy/Caddyfile        HTTPS reverse proxy
+├── deploy/helm/openradlr/  Helm chart for Kubernetes
 ├── docs/                   architecture, protocol, devices, decisions
 ├── Dockerfile, docker-compose.yml, Makefile, .env.example
-└── .github/workflows/ci.yml
+└── .github/workflows/      CI, image publishing (ghcr.io), releases
 ```
 
 ## Documentation

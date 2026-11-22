@@ -250,6 +250,30 @@ Every `*.json` file in `routes/` becomes a world riders can pick on the start
 screen; `OPENRADLR_ROUTE` is the default and listed first. Routes are mounted
 read-only, so a new file only needs `make restart`. See [routes](routes.md).
 
+## Kubernetes (Helm)
+
+The chart in `deploy/helm/openradlr/` runs the same image as one pod with a
+volume for `/app/data`, a Service and an optional Ingress. Releases publish
+the image to `ghcr.io/lethonium/openradlr-server` (`.github/workflows/image.yml`);
+the chart's `appVersion` picks the matching tag. The chart itself is published
+with each release as `oci://ghcr.io/lethonium/charts/openradlr` (or install
+`deploy/helm/openradlr` from a checkout).
+
+```bash
+helm install openradlr oci://ghcr.io/lethonium/charts/openradlr -n openradlr --create-namespace \
+  --set publicUrl=https://ride.example.org \
+  --set ingress.enabled=true --set ingress.className=nginx \
+  --set 'ingress.hosts[0].host=ride.example.org' \
+  --set 'ingress.hosts[0].paths[0].path=/' --set 'ingress.hosts[0].paths[0].pathType=Prefix' \
+  --set 'ingress.tls[0].secretName=openradlr-tls' --set 'ingress.tls[0].hosts[0]=ride.example.org'
+```
+
+Settings from `.env.example` go under `config:` in your values file; Strava
+keys and `OPENRADLR_SECRET_KEY` under `secrets:` (or `secrets.existingSecret`).
+See [the chart's README](../deploy/helm/openradlr/README.md). The server is a
+single pod by design ([ADR 0030](adr/0030-kubernetes-helm-chart.md)): an
+upgrade drops everyone riding, like `make update`.
+
 ## Without your own proxy
 
 For a server without a reverse proxy, the bundled Caddy can handle TLS:

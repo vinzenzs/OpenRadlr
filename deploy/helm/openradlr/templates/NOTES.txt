@@ -1,0 +1,24 @@
+OpenRadlr is starting (one pod; riders are dropped on every upgrade or restart).
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+  Open: http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/
+{{- end }}
+{{- else }}
+  Try it locally:
+    kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "openradlr.fullname" . }} 8080:{{ .Values.service.port }}
+    open http://localhost:8080/
+{{- end }}
+{{- if not .Values.publicUrl }}
+
+WARNING: publicUrl is empty, so any web page may open game connections to this
+server and Strava is unavailable. Set it on a public server.
+{{- end }}
+{{- if and .Values.ingress.enabled (not .Values.ingress.tls) }}
+
+NOTE: Browsers only allow Bluetooth trainers on https:// pages. Add ingress.tls
+or terminate TLS in front of the ingress.
+{{- end }}
+{{- if not .Values.persistence.enabled }}
+
+NOTE: persistence is disabled; Strava logins and statistics are lost on restart.
+{{- end }}
