@@ -79,8 +79,18 @@ kubectl -n openradlr create secret generic openradlr \
   from `X-Forwarded-For`, which the per-IP connection limit relies on. Turn it
   off if the pod can be reached without the ingress, e.g. through a
   `LoadBalancer` Service.
-- **Metrics:** `/internal/metrics` on the service port. With the ingress path
-  `/` it is public too; block `/internal` at your controller if that matters.
+- **Metrics:** `/internal/metrics` on the service port. With the Prometheus
+  Operator set `metrics.serviceMonitor.enabled=true`; with annotation-based
+  discovery (the community Prometheus chart) annotate the Service instead:
+  ```yaml
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/path: /internal/metrics
+      prometheus.io/port: "8080"
+  ```
+  With the ingress path `/` the endpoint is public too; block `/internal` at
+  your controller if that matters.
 - **Landing page:** not part of this chart (it is a separate static image,
   see `landing/`).
 

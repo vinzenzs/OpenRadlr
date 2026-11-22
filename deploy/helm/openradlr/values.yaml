@@ -99,9 +99,16 @@ ingress:
 # Prometheus metrics at /internal/metrics on the service port. With the
 # default ingress path "/" it is public too (as with the bundled Caddy); block
 # /internal at your ingress controller if that matters to you.
+# Without the Prometheus Operator, annotate the Service instead for the
+# community Prometheus chart's annotation-based discovery:
+#   service:
+#     annotations:
+#       prometheus.io/scrape: "true"
+#       prometheus.io/path: /internal/metrics
+#       prometheus.io/port: "8080"
 metrics:
   serviceMonitor:
-    # Requires the Prometheus Operator CRDs.
+    # Requires the Prometheus Operator (the CRD alone is not enough).
     enabled: false
     interval: 30s
     scrapeTimeout: 10s
@@ -163,6 +170,11 @@ startupProbe:
     port: http
   periodSeconds: 2
   failureThreshold: 30
+
+# Image of the `helm test` pod (GET /healthz). Point it at a mirror when the
+# cluster can't reach Docker Hub.
+test:
+  image: busybox:1.37
 
 extraVolumes: []
 extraVolumeMounts: []
